@@ -1,0 +1,266 @@
+{
+  "extName": {
+    "message": "Odoo Dev Tools"
+  },
+  "extDescription": {
+    "message": "Odoo geliştirici ve danışman aracı — tooltip, field bilgileri, RPC izleme, view analizi"
+  },
+  "loading": {
+    "message": "Yükleniyor..."
+  },
+  "copied": {
+    "message": "✅ Kopyalandı: "
+  },
+  "togglePanel": {
+    "message": "Panel Aç/Kapat"
+  },
+  "closePanel": {
+    "message": "Kapat"
+  },
+  "copyPanel": {
+    "message": "Kopyala"
+  },
+  "unknown": {
+    "message": "Bilinmiyor"
+  },
+  "yes": {
+    "message": "Evet"
+  },
+  "no": {
+    "message": "Hayır"
+  },
+  "queryError": {
+    "message": "Sorgu hatası"
+  },
+  "tabGeneral": {
+    "message": "Genel"
+  },
+  "tabTechnical": {
+    "message": "Teknik"
+  },
+  "tabView": {
+    "message": "View"
+  },
+  "tabAccess": {
+    "message": "Erişim"
+  },
+  "tabRelations": {
+    "message": "İlişki"
+  },
+  "tabRpc": {
+    "message": "RPC"
+  },
+  "rpcMonitoring": {
+    "message": "RPC izleniyor..."
+  },
+  "noRpcCalls": {
+    "message": "Henüz RPC çağrısı yakalanmadı.<br>Sayfada işlem yapın."
+  },
+  "rpcCalls": {
+    "message": "çağrı"
+  },
+  "rpcClear": {
+    "message": "Temizle"
+  },
+  "rpcRecords": {
+    "message": "kayıt"
+  },
+  "addonLabel": {
+    "message": "Addon"
+  },
+  "relationLabel": {
+    "message": "İlişki"
+  },
+  "quickCopy": {
+    "message": "Hızlı Kopyala"
+  },
+  "fieldNotFound": {
+    "message": "Alan bilgisi bulunamadı"
+  },
+  "fieldNameLabel": {
+    "message": "Alan Adı"
+  },
+  "descriptionLabel": {
+    "message": "Açıklama"
+  },
+  "typeLabel": {
+    "message": "Tür"
+  },
+  "helpLabel": {
+    "message": "Yardım"
+  },
+  "groupsLabel": {
+    "message": "Gruplar"
+  },
+  "relatedModelLabel": {
+    "message": "İlişki Modeli"
+  },
+  "relatedFieldLabel": {
+    "message": "İlişki Alanı"
+  },
+  "viewNotFound": {
+    "message": "View bulunamadı"
+  },
+  "baseViewTitle": {
+    "message": "Ana View"
+  },
+  "otherBaseViews": {
+    "message": "Diğer Base View'lar"
+  },
+  "inheritedViews": {
+    "message": "Inherited View'lar"
+  },
+  "noInheritedViews": {
+    "message": "Inherit eden view yok."
+  },
+  "nameLabel": {
+    "message": "Adı"
+  },
+  "priorityLabel": {
+    "message": "Öncelik"
+  },
+  "xmlPreview": {
+    "message": "📝 XML Önizleme"
+  },
+  "xmlHide": {
+    "message": "📝 XML Gizle"
+  },
+  "xmlNotFound": {
+    "message": "XML bulunamadı"
+  },
+  "accessRights": {
+    "message": "🔐 Erişim Hakları"
+  },
+  "everyone": {
+    "message": "Herkes"
+  },
+  "noAccessFound": {
+    "message": "Erişim kaydı bulunamadı."
+  },
+  "recordRulesTitle": {
+    "message": "📏 Record Rules"
+  },
+  "noRulesFound": {
+    "message": "Record rule bulunamadı."
+  },
+  "noRelations": {
+    "message": "İlişkisel alan bulunamadı."
+  },
+  "m2oDesc": {
+    "message": "Bu model şunlara bağlı"
+  },
+  "o2mDesc": {
+    "message": "Şunlar bu modele bağlı"
+  },
+  "m2mDesc": {
+    "message": "Çoka çok ilişkiler"
+  },
+  "domainNoRestriction": {
+    "message": "Kısıtlama yok."
+  },
+  "domainCannotParse": {
+    "message": "Otomatik yorumlanamadı."
+  },
+  "domainShowOnly": {
+    "message": "Sadece"
+  },
+  "domainAreShown": {
+    "message": "olan kayıtlar gösterilir."
+  },
+  "domainOr": {
+    "message": " VEYA "
+  },
+  "domainAnd": {
+    "message": " VE "
+  },
+  "debugMode": {
+    "message": "Debug Modu"
+  },
+  "debugEnable": {
+    "message": "Debug Aç"
+  },
+  "debugAssets": {
+    "message": "Assets"
+  },
+  "debugDisable": {
+    "message": "Kapat"
+  },
+  "quickNav": {
+    "message": "Hızlı Navigasyon"
+  },
+  "navGo": {
+    "message": "Git"
+  },
+  "exportFields": {
+    "message": "Field Dışa Aktar"
+  },
+  "techShortcuts": {
+    "message": "Teknik Kısayollar"
+  },
+  "shortcutModels": {
+    "message": "Modeller"
+  },
+  "shortcutFields": {
+    "message": "Alanlar"
+  },
+  "shortcutViews": {
+    "message": "View'lar"
+  },
+  "shortcutActions": {
+    "message": "Action'lar"
+  },
+  "shortcutMenus": {
+    "message": "Menüler"
+  },
+  "shortcutAccess": {
+    "message": "Erişimler"
+  },
+  "shortcutRules": {
+    "message": "Kurallar"
+  },
+  "shortcutModules": {
+    "message": "Modüller"
+  },
+  "howToUse": {
+    "message": "Nasıl Kullanılır?"
+  },
+  "helpStep1": {
+    "message": "Debug modunu aktif edin"
+  },
+  "helpStep2": {
+    "message": "Alanın ? ikonuna tıklayın"
+  },
+  "helpStep3": {
+    "message": "Bilgi paneli sağ altta belirir"
+  },
+  "helpTabGeneral": {
+    "message": "Tooltip + addon + kopyalama formatları"
+  },
+  "helpTabTechnical": {
+    "message": "store, compute, required, readonly vb."
+  },
+  "helpTabView": {
+    "message": "Ana view + inherited view'lar + XML"
+  },
+  "helpTabAccess": {
+    "message": "Access rights + record rules"
+  },
+  "helpTabRelations": {
+    "message": "Many2one/One2many/Many2many haritası"
+  },
+  "helpTabRpc": {
+    "message": "Canlı RPC çağrı izleyici"
+  },
+  "helpTip": {
+    "message": "Alt bardaki bilgilere tıklayarak kopyalayabilirsiniz."
+  },
+  "noOdooPage": {
+    "message": "Odoo sayfası değil veya extension yüklenmedi."
+  },
+  "exportError": {
+    "message": "Alan bilgileri alınamadı."
+  },
+  "pageInfo": {
+    "message": "Sayfa Bilgisi"
+  }
+}

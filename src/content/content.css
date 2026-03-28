@@ -1,0 +1,421 @@
+/* ============================================================
+   ALT BİLGİ BARI
+   ============================================================ */
+#odoo-dev-infobar {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 32px !important;
+  background: #1a1a2e !important;
+  color: #e0e0e0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  padding: 0 8px !important;
+  font-family: 'Courier New', monospace !important;
+  font-size: 11px !important;
+  z-index: 999998 !important;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.2) !important;
+}
+
+.infobar-env {
+  padding: 2px 8px !important;
+  border-radius: 4px !important;
+  font-weight: 700 !important;
+  font-size: 10px !important;
+  color: #fff !important;
+  margin-right: 8px !important;
+  letter-spacing: 0.5px !important;
+}
+
+.infobar-item {
+  padding: 3px 10px !important;
+  border-radius: 4px !important;
+  background: rgba(255,255,255,0.08) !important;
+  transition: background 0.2s !important;
+  white-space: nowrap !important;
+}
+
+.infobar-item:hover {
+  background: rgba(113, 75, 103, 0.4) !important;
+  color: #fff !important;
+}
+
+#infobar-toggle-panel,
+#infobar-close {
+  margin-left: auto !important;
+  background: rgba(255,255,255,0.1) !important;
+  border: none !important;
+  color: #e0e0e0 !important;
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  font-size: 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+#infobar-close {
+  margin-left: 4px !important;
+}
+
+#infobar-toggle-panel:hover,
+#infobar-close:hover {
+  background: rgba(255,255,255,0.25) !important;
+}
+
+/* ============================================================
+   KOPYALAMA TOAST
+   ============================================================ */
+#odoo-copy-toast {
+  position: fixed !important;
+  top: 20px !important;
+  right: 20px !important;
+  background: #2e7d32 !important;
+  color: #fff !important;
+  padding: 10px 18px !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  z-index: 9999999 !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2) !important;
+  transition: opacity 0.3s !important;
+  display: none;
+  max-width: 400px !important;
+  word-break: break-all !important;
+}
+
+/* ============================================================
+   FLOATING PANEL
+   ============================================================ */
+#odoo-tooltip-panel {
+  position: fixed !important;
+  bottom: 50px !important;
+  right: 20px !important;
+  width: 400px !important;
+  max-height: 520px !important;
+  background: #ffffff !important;
+  border: 2px solid #714B67 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+  z-index: 999999 !important;
+  display: none;
+  flex-direction: column !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  overflow: hidden !important;
+}
+
+/* Header */
+#odoo-tooltip-panel-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 8px 14px !important;
+  background: linear-gradient(135deg, #714B67, #8B6495) !important;
+  color: #fff !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: grab !important;
+  user-select: none !important;
+}
+
+#odoo-tooltip-panel-header:active { cursor: grabbing !important; }
+
+#odoo-tooltip-panel-header button {
+  background: rgba(255,255,255,0.2) !important;
+  border: none !important;
+  color: #fff !important;
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-size: 13px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: background 0.2s !important;
+}
+
+#odoo-tooltip-panel-header button:hover { background: rgba(255,255,255,0.35) !important; }
+
+/* Tabs */
+#odoo-tooltip-tabs {
+  display: flex !important;
+  background: #f5f0f4 !important;
+  border-bottom: 2px solid #714B67 !important;
+}
+
+.tab-btn {
+  flex: 1 !important;
+  padding: 7px 2px !important;
+  border: none !important;
+  background: transparent !important;
+  color: #714B67 !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+  border-bottom: 3px solid transparent !important;
+  font-family: inherit !important;
+}
+
+.tab-btn:hover { background: rgba(113, 75, 103, 0.1) !important; }
+.tab-btn.active { background: #fff !important; border-bottom-color: #714B67 !important; }
+
+/* Tab content */
+#odoo-tooltip-tab-content {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  max-height: 400px !important;
+}
+
+.tab-pane { display: none !important; }
+.tab-pane.active { display: block !important; }
+.tab-inner { padding: 12px !important; }
+
+/* Genel tab */
+#odoo-tooltip-panel-content {
+  padding: 12px !important;
+  margin: 0 !important;
+  font-size: 12px !important;
+  line-height: 1.6 !important;
+  color: #333 !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  font-family: 'Courier New', monospace !important;
+  background: #fafafa !important;
+}
+
+/* Addon info */
+#odoo-tooltip-addon-info {
+  padding: 8px 12px !important;
+  border-top: 1px solid rgba(113,75,103,0.15) !important;
+  background: linear-gradient(135deg, #f5f0f4, #efe8ed) !important;
+  font-size: 12px !important;
+}
+
+#odoo-tooltip-addon-info:empty { display: none !important; }
+
+.addon-line { padding: 3px 0 !important; color: #333 !important; }
+.addon-label { font-weight: 600 !important; color: #714B67 !important; }
+.addon-value {
+  color: #1a1a1a !important; font-weight: 500 !important;
+  background: rgba(113,75,103,0.1) !important; padding: 2px 8px !important; border-radius: 4px !important;
+}
+
+/* ============================================================
+   KOPYALAMA FORMATLARI
+   ============================================================ */
+#odoo-tooltip-copy-formats { padding: 8px 12px !important; }
+#odoo-tooltip-copy-formats:empty { display: none !important; }
+
+.copy-formats-title {
+  font-size: 11px !important; font-weight: 700 !important; color: #714B67 !important;
+  margin-bottom: 6px !important; padding-bottom: 4px !important;
+  border-bottom: 1px solid rgba(113,75,103,0.15) !important;
+}
+
+.copy-formats-grid {
+  display: flex !important; flex-direction: column !important; gap: 4px !important;
+}
+
+.copy-fmt-btn {
+  display: block !important; width: 100% !important; text-align: left !important;
+  padding: 6px 10px !important; background: #f5f0f4 !important;
+  border: 1px solid rgba(113,75,103,0.15) !important; border-radius: 6px !important;
+  font-size: 11px !important; font-family: 'Courier New', monospace !important;
+  color: #333 !important; cursor: pointer !important; transition: all 0.2s !important;
+}
+
+.copy-fmt-btn:hover {
+  background: #714B67 !important; color: #fff !important;
+  border-color: #714B67 !important;
+}
+
+/* ============================================================
+   INFO TABLE
+   ============================================================ */
+.info-table {
+  width: 100% !important; border-collapse: collapse !important; font-size: 12px !important;
+}
+
+.info-table th {
+  background: #714B67 !important; color: #fff !important;
+  padding: 5px 8px !important; text-align: center !important;
+  font-size: 10px !important; font-weight: 600 !important;
+}
+
+.info-table tr:nth-child(even) { background: #f9f6f8 !important; }
+
+.info-table td {
+  padding: 5px 8px !important; border-bottom: 1px solid #eee !important; vertical-align: top !important;
+}
+
+.info-label {
+  color: #714B67 !important; font-weight: 600 !important; white-space: nowrap !important; width: 100px !important;
+}
+
+.info-value { color: #333 !important; word-break: break-all !important; }
+.perm-cell { text-align: center !important; width: 28px !important; }
+
+/* ============================================================
+   VIEW TAB
+   ============================================================ */
+.view-section-title {
+  font-size: 12px !important; font-weight: 700 !important; color: #714B67 !important;
+  margin-bottom: 6px !important; padding-bottom: 4px !important;
+  border-bottom: 1px solid rgba(113,75,103,0.2) !important;
+}
+
+.xml-preview-btn {
+  display: block !important; width: 100% !important; margin-top: 8px !important;
+  padding: 6px !important; background: #f5f0f4 !important;
+  border: 1px dashed #714B67 !important; border-radius: 6px !important;
+  color: #714B67 !important; font-size: 11px !important; font-weight: 600 !important;
+  cursor: pointer !important; transition: all 0.2s !important;
+}
+
+.xml-preview-btn:hover { background: #714B67 !important; color: #fff !important; }
+
+.xml-preview-content {
+  margin-top: 8px !important; padding: 10px !important;
+  background: #1a1a2e !important; color: #a8d8a8 !important;
+  border-radius: 6px !important; font-size: 10px !important;
+  font-family: 'Courier New', monospace !important;
+  line-height: 1.5 !important; white-space: pre-wrap !important;
+  word-break: break-all !important; max-height: 200px !important;
+  overflow-y: auto !important;
+}
+
+/* Inherited views */
+.inherited-list { display: flex !important; flex-direction: column !important; gap: 3px !important; }
+
+.inherited-item {
+  display: flex !important; align-items: center !important; gap: 8px !important;
+  padding: 5px 8px !important; background: #f9f6f8 !important;
+  border-radius: 5px !important; font-size: 11px !important;
+  border-left: 3px solid #714B67 !important;
+}
+
+.inherited-addon {
+  background: #714B67 !important; color: #fff !important;
+  padding: 1px 6px !important; border-radius: 4px !important;
+  font-size: 10px !important; font-weight: 600 !important; flex-shrink: 0 !important;
+}
+
+.inherited-name { color: #333 !important; word-break: break-all !important; }
+
+/* ============================================================
+   ERISIM TAB
+   ============================================================ */
+.rules-list { display: flex !important; flex-direction: column !important; gap: 6px !important; }
+
+.rule-item {
+  padding: 8px !important; background: #f9f6f8 !important;
+  border-radius: 6px !important; border-left: 3px solid #e07b39 !important;
+}
+
+.rule-name { font-weight: 600 !important; color: #333 !important; font-size: 12px !important; margin-bottom: 4px !important; }
+
+.rule-domain {
+  font-family: 'Courier New', monospace !important; font-size: 11px !important;
+  color: #555 !important; background: rgba(0,0,0,0.04) !important;
+  padding: 4px 6px !important; border-radius: 4px !important;
+  margin-bottom: 4px !important; word-break: break-all !important;
+}
+
+.rule-explain {
+  font-size: 11px !important; color: #2e7d32 !important;
+  background: rgba(46,125,50,0.08) !important; padding: 5px 8px !important;
+  border-radius: 4px !important; margin: 4px 0 !important;
+  line-height: 1.4 !important; border-left: 3px solid #2e7d32 !important;
+  font-style: italic !important;
+}
+
+.rule-perms { font-size: 11px !important; color: #714B67 !important; font-weight: 600 !important; }
+
+.access-table th { font-size: 10px !important; padding: 4px 6px !important; }
+.access-table .info-label { font-size: 11px !important; max-width: 150px !important; white-space: normal !important; word-break: break-word !important; }
+
+/* ============================================================
+   ILISKILER TAB
+   ============================================================ */
+.relation-model-name {
+  text-align: center !important; font-size: 14px !important;
+  font-weight: 700 !important; color: #714B67 !important;
+  padding: 8px !important; background: #f5f0f4 !important;
+  border-radius: 8px !important; margin-bottom: 10px !important;
+}
+
+.rel-desc { font-weight: 400 !important; font-size: 10px !important; color: #888 !important; }
+
+.relation-list { display: flex !important; flex-direction: column !important; gap: 4px !important; margin-bottom: 8px !important; }
+
+.relation-item {
+  display: grid !important; grid-template-columns: 1fr 1fr !important;
+  gap: 2px 8px !important; padding: 6px 8px !important;
+  background: #f9f6f8 !important; border-radius: 5px !important;
+  border-left: 3px solid #714B67 !important; font-size: 11px !important;
+}
+
+.relation-field { font-weight: 600 !important; color: #333 !important; font-family: 'Courier New', monospace !important; }
+.relation-target { color: #714B67 !important; font-weight: 500 !important; text-align: right !important; }
+.relation-label { grid-column: 1 / -1 !important; color: #888 !important; font-size: 10px !important; }
+
+/* ============================================================
+   RPC TAB
+   ============================================================ */
+.rpc-header {
+  display: flex !important; justify-content: space-between !important;
+  align-items: center !important; margin-bottom: 8px !important;
+}
+
+.rpc-count { font-size: 11px !important; color: #888 !important; }
+
+.rpc-clear {
+  padding: 3px 10px !important; background: #f44336 !important;
+  color: #fff !important; border: none !important; border-radius: 4px !important;
+  font-size: 10px !important; cursor: pointer !important; font-weight: 600 !important;
+}
+
+.rpc-list { display: flex !important; flex-direction: column !important; gap: 4px !important; }
+
+.rpc-item {
+  padding: 6px 8px !important; background: #f9f9f9 !important;
+  border-radius: 5px !important; border-left: 3px solid #714B67 !important;
+}
+
+.rpc-item.rpc-slow { border-left-color: #ff9800 !important; background: #fff8e1 !important; }
+.rpc-item.rpc-error { border-left-color: #f44336 !important; background: #ffebee !important; }
+
+.rpc-row1 { display: flex !important; gap: 6px !important; align-items: center !important; }
+.rpc-row2 { display: flex !important; gap: 6px !important; margin-top: 2px !important; }
+
+.rpc-model { font-weight: 600 !important; color: #714B67 !important; font-size: 11px !important; }
+.rpc-method { font-size: 11px !important; color: #333 !important; font-family: 'Courier New', monospace !important; }
+.rpc-duration { margin-left: auto !important; font-weight: 700 !important; font-size: 11px !important; color: #555 !important; }
+.rpc-time { font-size: 10px !important; color: #999 !important; }
+.rpc-result { font-size: 10px !important; color: #2e7d32 !important; }
+
+.rpc-args {
+  margin-top: 3px !important; font-size: 10px !important;
+  font-family: 'Courier New', monospace !important; color: #777 !important;
+  word-break: break-all !important; max-height: 40px !important;
+  overflow: hidden !important;
+}
+
+/* ============================================================
+   GENEL
+   ============================================================ */
+.tab-loading { display: block !important; text-align: center !important; color: #999 !important; font-size: 12px !important; padding: 20px !important; }
+.tab-empty { text-align: center !important; color: #999 !important; font-size: 12px !important; padding: 20px !important; }
+.tab-note { color: #888 !important; font-size: 11px !important; font-style: italic !important; padding: 8px !important; }
+.addon-separator { height: 1px !important; background: rgba(113,75,103,0.2) !important; margin: 6px 0 !important; }
+
+#odoo-tooltip-tab-content::-webkit-scrollbar { width: 5px !important; }
+#odoo-tooltip-tab-content::-webkit-scrollbar-thumb { background: #714B67 !important; border-radius: 10px !important; }
+.xml-preview-content::-webkit-scrollbar { width: 4px !important; }
+.xml-preview-content::-webkit-scrollbar-thumb { background: #666 !important; border-radius: 10px !important; }

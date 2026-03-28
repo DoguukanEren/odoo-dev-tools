@@ -1,0 +1,266 @@
+{
+  "extName": {
+    "message": "Odoo Dev Tools"
+  },
+  "extDescription": {
+    "message": "Chrome extension for Odoo developers and consultants — field info, RPC monitor, view analysis, access rights"
+  },
+  "loading": {
+    "message": "Loading..."
+  },
+  "copied": {
+    "message": "✅ Copied: "
+  },
+  "togglePanel": {
+    "message": "Toggle Panel"
+  },
+  "closePanel": {
+    "message": "Close"
+  },
+  "copyPanel": {
+    "message": "Copy"
+  },
+  "unknown": {
+    "message": "Unknown"
+  },
+  "yes": {
+    "message": "Yes"
+  },
+  "no": {
+    "message": "No"
+  },
+  "queryError": {
+    "message": "Query error"
+  },
+  "tabGeneral": {
+    "message": "General"
+  },
+  "tabTechnical": {
+    "message": "Technical"
+  },
+  "tabView": {
+    "message": "View"
+  },
+  "tabAccess": {
+    "message": "Access"
+  },
+  "tabRelations": {
+    "message": "Relations"
+  },
+  "tabRpc": {
+    "message": "RPC"
+  },
+  "rpcMonitoring": {
+    "message": "Monitoring RPC..."
+  },
+  "noRpcCalls": {
+    "message": "No RPC calls captured yet.<br>Perform an action on the page."
+  },
+  "rpcCalls": {
+    "message": "calls"
+  },
+  "rpcClear": {
+    "message": "Clear"
+  },
+  "rpcRecords": {
+    "message": "records"
+  },
+  "addonLabel": {
+    "message": "Addon"
+  },
+  "relationLabel": {
+    "message": "Relation"
+  },
+  "quickCopy": {
+    "message": "Quick Copy"
+  },
+  "fieldNotFound": {
+    "message": "Field info not found"
+  },
+  "fieldNameLabel": {
+    "message": "Field Name"
+  },
+  "descriptionLabel": {
+    "message": "Description"
+  },
+  "typeLabel": {
+    "message": "Type"
+  },
+  "helpLabel": {
+    "message": "Help"
+  },
+  "groupsLabel": {
+    "message": "Groups"
+  },
+  "relatedModelLabel": {
+    "message": "Related Model"
+  },
+  "relatedFieldLabel": {
+    "message": "Related Field"
+  },
+  "viewNotFound": {
+    "message": "No views found"
+  },
+  "baseViewTitle": {
+    "message": "Base View"
+  },
+  "otherBaseViews": {
+    "message": "Other Base Views"
+  },
+  "inheritedViews": {
+    "message": "Inherited Views"
+  },
+  "noInheritedViews": {
+    "message": "No inherited views."
+  },
+  "nameLabel": {
+    "message": "Name"
+  },
+  "priorityLabel": {
+    "message": "Priority"
+  },
+  "xmlPreview": {
+    "message": "📝 XML Preview"
+  },
+  "xmlHide": {
+    "message": "📝 Hide XML"
+  },
+  "xmlNotFound": {
+    "message": "XML not found"
+  },
+  "accessRights": {
+    "message": "🔐 Access Rights"
+  },
+  "everyone": {
+    "message": "Everyone"
+  },
+  "noAccessFound": {
+    "message": "No access records found."
+  },
+  "recordRulesTitle": {
+    "message": "📏 Record Rules"
+  },
+  "noRulesFound": {
+    "message": "No record rules found."
+  },
+  "noRelations": {
+    "message": "No relational fields found."
+  },
+  "m2oDesc": {
+    "message": "This model depends on"
+  },
+  "o2mDesc": {
+    "message": "These depend on this model"
+  },
+  "m2mDesc": {
+    "message": "Many-to-many relations"
+  },
+  "domainNoRestriction": {
+    "message": "No restriction."
+  },
+  "domainCannotParse": {
+    "message": "Could not be automatically interpreted."
+  },
+  "domainShowOnly": {
+    "message": "Only records where"
+  },
+  "domainAreShown": {
+    "message": "are shown."
+  },
+  "domainOr": {
+    "message": " OR "
+  },
+  "domainAnd": {
+    "message": " AND "
+  },
+  "debugMode": {
+    "message": "Debug Mode"
+  },
+  "debugEnable": {
+    "message": "Enable Debug"
+  },
+  "debugAssets": {
+    "message": "Assets"
+  },
+  "debugDisable": {
+    "message": "Disable"
+  },
+  "quickNav": {
+    "message": "Quick Navigation"
+  },
+  "navGo": {
+    "message": "Go"
+  },
+  "exportFields": {
+    "message": "Export Fields"
+  },
+  "techShortcuts": {
+    "message": "Technical Shortcuts"
+  },
+  "shortcutModels": {
+    "message": "Models"
+  },
+  "shortcutFields": {
+    "message": "Fields"
+  },
+  "shortcutViews": {
+    "message": "Views"
+  },
+  "shortcutActions": {
+    "message": "Actions"
+  },
+  "shortcutMenus": {
+    "message": "Menus"
+  },
+  "shortcutAccess": {
+    "message": "Access Rights"
+  },
+  "shortcutRules": {
+    "message": "Rules"
+  },
+  "shortcutModules": {
+    "message": "Modules"
+  },
+  "howToUse": {
+    "message": "How to Use?"
+  },
+  "helpStep1": {
+    "message": "Enable debug mode"
+  },
+  "helpStep2": {
+    "message": "Click the ? icon on a field"
+  },
+  "helpStep3": {
+    "message": "Info panel appears on screen"
+  },
+  "helpTabGeneral": {
+    "message": "Tooltip + addon + copy formats"
+  },
+  "helpTabTechnical": {
+    "message": "store, compute, required, readonly, etc."
+  },
+  "helpTabView": {
+    "message": "Base view + inherited views + XML"
+  },
+  "helpTabAccess": {
+    "message": "Access rights + record rules"
+  },
+  "helpTabRelations": {
+    "message": "Many2one/One2many/Many2many map"
+  },
+  "helpTabRpc": {
+    "message": "Live RPC call monitor"
+  },
+  "helpTip": {
+    "message": "Click items in the bottom bar to copy."
+  },
+  "noOdooPage": {
+    "message": "Not an Odoo page or extension not loaded."
+  },
+  "exportError": {
+    "message": "Could not fetch field information."
+  },
+  "pageInfo": {
+    "message": "Page Info"
+  }
+}

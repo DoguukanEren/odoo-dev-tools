@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Odoo Dev Tools</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div id="env-badge"></div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+
+      <!-- Page Info -->
+      <div class="section" id="page-info-section">
+        <h2 data-i18n="pageInfo">Page Info</h2>
+        <div id="page-info-content">
+          <span class="mini-loader" data-i18n="loading">Loading...</span>
+        </div>
+      </div>
+
+      <!-- Debug Mode -->
+      <div class="section">
+        <h2 data-i18n="debugMode">Debug Mode</h2>
+        <div class="debug-buttons">
+          <button id="debug-on" class="dbg-btn" data-i18n="debugEnable">Enable Debug</button>
+          <button id="debug-assets" class="dbg-btn dbg-assets" data-i18n="debugAssets">Assets</button>
+          <button id="debug-off" class="dbg-btn dbg-off" data-i18n="debugDisable">Disable</button>
+        </div>
+      </div>
+
+      <!-- Quick Navigation -->
+      <div class="section">
+        <h2 data-i18n="quickNav">Quick Navigation</h2>
+        <div class="nav-row">
+          <input type="text" id="nav-model" placeholder="res.partner" class="nav-input">
+          <input type="text" id="nav-id" placeholder="ID" class="nav-input nav-id">
+          <button id="nav-go" class="nav-btn" data-i18n="navGo">Go</button>
+        </div>
+      </div>
+
+      <!-- Field Export -->
+      <div class="section">
+        <h2 data-i18n="exportFields">Export Fields</h2>
+        <div class="export-row">
+          <input type="text" id="export-model" placeholder="sale.order" class="nav-input">
+          <button id="export-csv" class="export-btn">CSV</button>
+          <button id="export-json" class="export-btn">JSON</button>
+        </div>
+      </div>
+
+      <!-- Technical Shortcuts -->
+      <div class="section">
+        <h2 data-i18n="techShortcuts">Technical Shortcuts</h2>
+        <div class="shortcut-grid">
+          <button class="shortcut-btn" data-model="ir.model" data-i18n="shortcutModels">Models</button>
+          <button class="shortcut-btn" data-model="ir.model.fields" data-i18n="shortcutFields">Fields</button>
+          <button class="shortcut-btn" data-model="ir.ui.view" data-i18n="shortcutViews">Views</button>
+          <button class="shortcut-btn" data-model="ir.actions.act_window" data-i18n="shortcutActions">Actions</button>
+          <button class="shortcut-btn" data-model="ir.ui.menu" data-i18n="shortcutMenus">Menus</button>
+          <button class="shortcut-btn" data-model="ir.model.access" data-i18n="shortcutAccess">Access Rights</button>
+          <button class="shortcut-btn" data-model="ir.rule" data-i18n="shortcutRules">Rules</button>
+          <button class="shortcut-btn" data-model="ir.module.module" data-i18n="shortcutModules">Modules</button>
+        </div>
+      </div>
+
+      <!-- How to Use (collapsible) -->
+      <div class="section">
+        <h2 class="collapsible" id="help-toggle"><span data-i18n="howToUse">How to Use?</span> <span class="caret">▼</span></h2>
+        <div id="help-content" style="display:none;">
+          <div class="help-step"><span class="hs-num">1</span> <span data-i18n="helpStep1">Enable debug mode</span></div>
+          <div class="help-step"><span class="hs-num">2</span> <span data-i18n="helpStep2">Click the ? icon on a field</span></div>
+          <div class="help-step"><span class="hs-num">3</span> <span data-i18n="helpStep3">Info panel appears on screen</span></div>
+          <div class="help-tabs-info">
+            <div><strong data-i18n="tabGeneral">General</strong> — <span data-i18n="helpTabGeneral">Tooltip + addon + copy formats</span></div>
+            <div><strong data-i18n="tabTechnical">Technical</strong> — <span data-i18n="helpTabTechnical">store, compute, required, readonly, etc.</span></div>
+            <div><strong data-i18n="tabView">View</strong> — <span data-i18n="helpTabView">Base view + inherited views + XML</span></div>
+            <div><strong data-i18n="tabAccess">Access</strong> — <span data-i18n="helpTabAccess">Access rights + record rules</span></div>
+            <div><strong data-i18n="tabRelations">Relations</strong> — <span data-i18n="helpTabRelations">Many2one/One2many/Many2many map</span></div>
+            <div><strong>RPC</strong> — <span data-i18n="helpTabRpc">Live RPC call monitor</span></div>
+          </div>
+          <div class="help-tip" data-i18n="helpTip">Click items in the bottom bar to copy.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>Made with <span class="heart">❤</span> by Quanimo <span class="initials">D.E.Ö</span></p>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
