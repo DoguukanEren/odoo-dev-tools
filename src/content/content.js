@@ -12,15 +12,29 @@
   // YARDIMCI FONKSIYONLAR
   // ============================================================
   function odooRpc(model, method, args, kwargs) {
+    const kw = kwargs || {};
+    if (!kw.context) kw.context = {};
     const payload = {
       jsonrpc: '2.0', method: 'call', id: Date.now(),
-      params: { model, method, args, kwargs: kwargs || {} }
+      params: { model, method, args, kwargs: kw }
     };
-    return fetch(window.location.origin + '/web/dataset/call_kw', {
+    const makeRequest = (url) => fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(payload)
-    }).then(r => r.json()).then(d => d.result || []);
+    }).then(r => r.json()).then(d => {
+      if (d.error) {
+        console.warn('[OdooDevTools] RPC error:', d.error.data?.message || d.error.message);
+        return [];
+      }
+      if (d.result === undefined || d.result === null) return [];
+      return d.result;
+    });
+
+    // Try new v17+ path format first, fallback to classic endpoint
+    return makeRequest(window.location.origin + '/web/dataset/call_kw/' + model + '/' + method)
+      .catch(() => makeRequest(window.location.origin + '/web/dataset/call_kw'));
   }
 
   function esc(str) {
@@ -711,14 +725,29 @@
   // ============================================================
   function parseTooltipFields(tooltip) {
     let modelName = null, fieldName = null;
-    tooltip.querySelectorAll('.o-tooltip--technical li').forEach(li => {
-      const titleEl = li.querySelector('.o-tooltip--technical--title');
+
+    // DOM-based parsing (v16/older class names)
+    tooltip.querySelectorAll('.o-tooltip--technical li, .o_tooltip--technical li').forEach(li => {
+      const titleEl = li.querySelector('.o-tooltip--technical--title, .o_tooltip--technical--title');
       if (!titleEl) return;
       const title = titleEl.textContent.trim().toLowerCase();
-      const value = li.textContent.replace(titleEl.textContent, '').trim();
-      if (title.includes('field') || title.includes('alan')) fieldName = value;
-      if (title.includes('model')) modelName = value;
+      // Take only the first non-empty token to avoid embedded whitespace issues
+      const raw = li.textContent.replace(titleEl.textContent, '').replace(':', '').trim();
+      const value = raw.split(/\s+/)[0];
+      if (!fieldName && (title === 'field' || title.includes('alan'))) fieldName = value;
+      if (!modelName && title === 'model') modelName = value;
     });
+
+    // Text-based fallback for v17+/v19 where class names may differ
+    if (!modelName || !fieldName) {
+      const lines = tooltip.textContent.split('\n').map(l => l.trim()).filter(Boolean);
+      for (const line of lines) {
+        const parts = line.split(/\s+/);
+        if (!fieldName && /^field$/i.test(parts[0]) && parts[1]) fieldName = parts[1].replace(':', '').trim();
+        if (!modelName && /^model$/i.test(parts[0]) && parts[1]) modelName = parts[1].replace(':', '').trim();
+      }
+    }
+
     return { modelName, fieldName };
   }
 
