@@ -5,6 +5,7 @@
   "default_locale": "en",
   "description": "__MSG_extDescription__",
   "permissions": ["clipboardWrite", "storage", "activeTab"],
+  "host_permissions": ["*://*/*"],
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",

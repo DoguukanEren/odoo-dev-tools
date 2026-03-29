@@ -1,12 +1,33 @@
 (function () {
-  const t = (key) => chrome.i18n.getMessage(key) || key;
+  function t(key) {
+    try {
+      if (!chrome.runtime || !chrome.runtime.id) return key;
+      return chrome.i18n.getMessage(key) || key;
+    } catch (e) { return key; }
+  }
+
+  function safeChromeStorage(fn) {
+    try {
+      if (!chrome.runtime || !chrome.runtime.id) return;
+      fn();
+    } catch (e) { /* extension context invalidated */ }
+  }
+
+  // Named constants — magic number'lar yerine
+  const TOAST_VISIBLE_MS      = 1500;
+  const TOAST_FADE_MS         = 300;
+  const HASH_CHANGE_DELAY_MS  = 300;
+  const SPA_NAVIGATE_DELAY_MS = 400;
+  const HIDE_DELAY_MS         = 300;
+  const MAX_RPC_LOGS          = 100;
+  const RPC_SLOW_THRESHOLD_MS = 500;
+  const DOMAIN_TUPLE_REGEX    = /\(\s*['"]([\w.]+)['"]\s*,\s*['"]([^'"]+)['"]\s*,\s*(.+?)\s*\)/g;
 
   let currentTooltip = null;
+  let previousTooltip = null;
   let hideTimer = null;
   let panel = null;
   let rpcLogs = [];
-  let lastModel = null;
-  let lastField = null;
 
   // ============================================================
   // YARDIMCI FONKSIYONLAR
@@ -16,11 +37,20 @@
       jsonrpc: '2.0', method: 'call', id: Date.now(),
       params: { model, method, args, kwargs: kwargs || {} }
     };
-    return fetch(window.location.origin + '/web/dataset/call_kw', {
+    // Odoo 17+ path-based endpoint dene, sonra fallback
+    const endpoint = window.location.origin + '/web/dataset/call_kw';
+    return fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
       body: JSON.stringify(payload)
-    }).then(r => r.json()).then(d => d.result || []);
+    }).then(r => r.json()).then(d => {
+      if (d.error) {
+        console.warn('[OdooDevTools] RPC error:', model, method, d.error.data?.message || d.error.message);
+        return [];
+      }
+      return d.result || [];
+    });
   }
 
   function esc(str) {
@@ -31,15 +61,62 @@
 
   function getUrlParams() {
     const hash = window.location.hash || '';
+    const path = window.location.pathname || '';
     const get = (key) => { const m = hash.match(new RegExp(key + '=(\\w+)')); return m ? m[1] : ''; };
-    return {
-      model: get('model'),
-      viewType: get('view_type') || 'form',
-      actionId: get('action'),
-      menuId: get('menu_id'),
-      recordId: get('id'),
-      cids: get('cids')
-    };
+
+    // Odoo 16- : hash-based routing (#model=product.template&...)
+    const hashModel = get('model');
+    if (hashModel) {
+      return {
+        model: hashModel,
+        viewType: get('view_type') || 'form',
+        actionId: get('action'),
+        menuId: get('menu_id'),
+        recordId: get('id'),
+        cids: get('cids'),
+        routingType: 'hash'
+      };
+    }
+
+    // Odoo 17+ : path-based routing (/odoo/[app]/[resource]/[id])
+    if (path.startsWith('/odoo')) {
+      const segments = path.split('/').filter(Boolean);
+      const lastSegment = segments[segments.length - 1];
+      const recordId = /^\d+$/.test(lastSegment) ? lastSegment : '';
+      const viewType = recordId ? 'form' : 'list';
+
+      // OWL component state'inden model adini oku
+      let model = '';
+      try {
+        const selectors = ['.o_form_view', '.o_list_view', '.o_kanban_view', '.o_view_controller'];
+        for (const sel of selectors) {
+          const el = document.querySelector(sel);
+          if (!el) continue;
+          // OWL fiber uzerinden dene
+          const fiber = el.__owl__;
+          if (fiber) {
+            const comp = fiber.component;
+            model = comp?.model?.root?.resModel || comp?.props?.resModel || '';
+            if (model) break;
+          }
+          // data-model attribute'dan dene
+          const dm = el.closest('[data-model]');
+          if (dm) { model = dm.dataset.model; break; }
+        }
+      } catch (e) { /* OWL erisim hatasi */ }
+
+      return { model, viewType, actionId: '', menuId: '', recordId, cids: '', routingType: 'path' };
+    }
+
+    return { model: '', viewType: 'form', actionId: '', menuId: '', recordId: '', cids: '', routingType: 'unknown' };
+  }
+
+  function isOdooPage() {
+    if (window.location.pathname.startsWith('/odoo')) return true;
+    const hash = window.location.hash || '';
+    if (hash.includes('model=') || hash.includes('action=')) return true;
+    if (document.querySelector('.o_web_client, .o_action_manager, .o_home_menu')) return true;
+    return false;
   }
 
   function getEnvInfo() {
@@ -66,7 +143,7 @@
     toast.textContent = t('copied') + text;
     toast.style.display = 'block';
     toast.style.opacity = '1';
-    setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => { toast.style.display = 'none'; }, 300); }, 1500);
+    setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => { toast.style.display = 'none'; }, TOAST_FADE_MS); }, TOAST_VISIBLE_MS);
   }
 
   // ============================================================
@@ -76,7 +153,7 @@
     if (document.getElementById('odoo-dev-infobar')) return;
 
     const params = getUrlParams();
-    if (!params.model) return; // Odoo sayfasi degilse gosterme
+    if (!params.model && !isOdooPage()) return; // Odoo sayfasi degilse gosterme
 
     const env = getEnvInfo();
     const bar = document.createElement('div');
@@ -85,10 +162,10 @@
     bar.innerHTML = `
       <span class="infobar-env" style="background:${env.color}">${env.label}</span>
       <span class="infobar-item" data-copy="${esc(params.model)}">📦 ${esc(params.model)}</span>
-      ${params.actionId ? '<span class="infobar-item" data-copy="' + params.actionId + '">⚡ Action: ' + params.actionId + '</span>' : ''}
-      ${params.menuId ? '<span class="infobar-item" data-copy="' + params.menuId + '">📋 Menu: ' + params.menuId + '</span>' : ''}
-      <span class="infobar-item" data-copy="${params.viewType}">🖼 ${params.viewType}</span>
-      ${params.recordId ? '<span class="infobar-item" data-copy="' + params.recordId + '">🔑 ID: ' + params.recordId + '</span>' : ''}
+      ${params.actionId ? '<span class="infobar-item" data-copy="' + esc(params.actionId) + '">⚡ Action: ' + esc(params.actionId) + '</span>' : ''}
+      ${params.menuId ? '<span class="infobar-item" data-copy="' + esc(params.menuId) + '">📋 Menu: ' + esc(params.menuId) + '</span>' : ''}
+      <span class="infobar-item" data-copy="${esc(params.viewType)}">🖼 ${esc(params.viewType)}</span>
+      ${params.recordId ? '<span class="infobar-item" data-copy="' + esc(params.recordId) + '">🔑 ID: ' + esc(params.recordId) + '</span>' : ''}
       <button id="infobar-toggle-panel" title="${t('togglePanel')}">🔧</button>
       <button id="infobar-close" title="✕">✕</button>
     `;
@@ -108,7 +185,7 @@
     bar.querySelector('#infobar-toggle-panel').addEventListener('click', () => {
       if (!panel) {
         createPanel();
-        chrome.storage.local.get(['panelPos'], (result) => {
+        safeChromeStorage(() => chrome.storage.local.get(['panelPos'], (result) => {
           if (result.panelPos) {
             panel.style.top = result.panelPos.top;
             panel.style.left = result.panelPos.left;
@@ -116,12 +193,12 @@
             panel.style.bottom = 'auto';
           }
           panel.style.display = 'flex';
-          chrome.storage.local.set({ panelVisible: true });
-        });
+          safeChromeStorage(() => chrome.storage.local.set({ panelVisible: true }));
+        }));
       } else {
         const visible = panel.style.display === 'none';
         panel.style.display = visible ? 'flex' : 'none';
-        chrome.storage.local.set({ panelVisible: visible });
+        safeChromeStorage(() => chrome.storage.local.set({ panelVisible: visible }));
       }
     });
   }
@@ -137,28 +214,39 @@
     const old = document.getElementById('odoo-dev-infobar');
     if (old) old.remove();
     // Kucuk gecikme — Odoo hash'i gunceller sonra DOM stabilize olur
-    setTimeout(createInfoBar, 300);
+    setTimeout(createInfoBar, HASH_CHANGE_DELAY_MS);
   });
 
   // Odoo SPA navigasyonu icin pushState/replaceState de dinle
-  const origPushState = history.pushState;
-  history.pushState = function () {
-    origPushState.apply(this, arguments);
+  function onSpaNavigate() {
     setTimeout(() => {
       const old = document.getElementById('odoo-dev-infobar');
       if (old) old.remove();
       createInfoBar();
-    }, 300);
+    }, SPA_NAVIGATE_DELAY_MS);
+  }
+
+  const origPushState = history.pushState;
+  history.pushState = function () {
+    origPushState.apply(this, arguments);
+    onSpaNavigate();
+  };
+
+  const origReplaceState = history.replaceState;
+  history.replaceState = function () {
+    origReplaceState.apply(this, arguments);
+    onSpaNavigate();
   };
 
   // ============================================================
   // RPC IZLEYICI
   // ============================================================
   window.addEventListener('message', (event) => {
+    if (event.origin !== window.location.origin) return;
     if (event.data && event.data.type === 'ODOO_RPC_LOG') {
       const log = event.data;
-      rpcLogs.unshift(log);
-      if (rpcLogs.length > 100) rpcLogs.pop();
+      rpcLogs.push(log);
+      if (rpcLogs.length > MAX_RPC_LOGS) rpcLogs.shift();
       updateRpcTab();
     }
   });
@@ -177,33 +265,33 @@
       return;
     }
 
-    let html = '<div class="rpc-header">';
-    html += '<span class="rpc-count">' + rpcLogs.length + ' ' + t('rpcCalls') + '</span>';
-    html += '<button id="rpc-clear-btn" class="rpc-clear">' + t('rpcClear') + '</button>';
-    html += '</div>';
-    html += '<div class="rpc-list">';
+    const parts = [
+      '<div class="rpc-header">',
+      '<span class="rpc-count">' + rpcLogs.length + ' ' + t('rpcCalls') + '</span>',
+      '<button id="rpc-clear-btn" class="rpc-clear">' + t('rpcClear') + '</button>',
+      '</div>',
+      '<div class="rpc-list">',
+    ];
 
-    rpcLogs.forEach((log, i) => {
+    [...rpcLogs].reverse().forEach((log) => {
       const time = new Date(log.timestamp).toLocaleTimeString('tr-TR');
-      const cls = log.error ? 'rpc-item rpc-error' : (log.duration > 500 ? 'rpc-item rpc-slow' : 'rpc-item');
-      html += '<div class="' + cls + '">';
-      html += '<div class="rpc-row1">';
-      html += '<span class="rpc-model">' + esc(log.model) + '</span>';
-      html += '<span class="rpc-method">' + esc(log.method) + '</span>';
-      html += '<span class="rpc-duration">' + log.duration + 'ms</span>';
-      html += '</div>';
-      html += '<div class="rpc-row2">';
-      html += '<span class="rpc-time">' + time + '</span>';
-      if (log.resultCount) html += '<span class="rpc-result">' + log.resultCount + ' ' + t('rpcRecords') + '</span>';
-      html += '</div>';
-      if (log.args) {
-        html += '<div class="rpc-args">' + esc(log.args) + '</div>';
-      }
-      html += '</div>';
+      const cls = log.error ? 'rpc-item rpc-error' : (log.duration > RPC_SLOW_THRESHOLD_MS ? 'rpc-item rpc-slow' : 'rpc-item');
+      parts.push('<div class="' + cls + '">');
+      parts.push('<div class="rpc-row1">');
+      parts.push('<span class="rpc-model">' + esc(log.model) + '</span>');
+      parts.push('<span class="rpc-method">' + esc(log.method) + '</span>');
+      parts.push('<span class="rpc-duration">' + log.duration + 'ms</span>');
+      parts.push('</div>');
+      parts.push('<div class="rpc-row2">');
+      parts.push('<span class="rpc-time">' + time + '</span>');
+      if (log.resultCount) parts.push('<span class="rpc-result">' + log.resultCount + ' ' + t('rpcRecords') + '</span>');
+      parts.push('</div>');
+      if (log.args) parts.push('<div class="rpc-args">' + esc(log.args) + '</div>');
+      parts.push('</div>');
     });
 
-    html += '</div>';
-    el.innerHTML = html;
+    parts.push('</div>');
+    el.innerHTML = parts.join('');
 
     // Temizle butonu
     const clearBtn = el.querySelector('#rpc-clear-btn');
@@ -267,12 +355,12 @@
 
     panel.querySelector('#odoo-tooltip-close-btn').addEventListener('click', () => {
       panel.style.display = 'none';
-      chrome.storage.local.set({ panelVisible: false });
+      safeChromeStorage(() => chrome.storage.local.set({ panelVisible: false }));
     });
 
     panel.querySelector('#odoo-tooltip-copy-btn').addEventListener('click', () => {
       const activePane = panel.querySelector('.tab-pane.active');
-      copyToClipboard(activePane.textContent.trim());
+      if (activePane) copyToClipboard(activePane.textContent.trim());
     });
 
     panel.querySelectorAll('.tab-btn').forEach(btn => {
@@ -281,7 +369,7 @@
         panel.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
         btn.classList.add('active');
         panel.querySelector('.tab-pane[data-tab="' + btn.dataset.tab + '"]').classList.add('active');
-        chrome.storage.local.set({ activeTab: btn.dataset.tab });
+        safeChromeStorage(() => chrome.storage.local.set({ activeTab: btn.dataset.tab }));
         // RPC tabina gecildiginde guncelle
         if (btn.dataset.tab === 'rpc') {
           renderRpcContent(panel.querySelector('#odoo-tooltip-rpc'));
@@ -310,7 +398,7 @@
     document.addEventListener('mouseup', () => {
       if (dragging) {
         dragging = false;
-        chrome.storage.local.set({ panelPos: { top: el.style.top, left: el.style.left } });
+        safeChromeStorage(() => chrome.storage.local.set({ panelPos: { top: el.style.top, left: el.style.left } }));
       }
     });
   }
@@ -331,7 +419,7 @@
     });
 
     // Storage'dan pozisyon, tab ve görünürlük geri yükle
-    chrome.storage.local.get(['panelPos', 'activeTab'], (result) => {
+    safeChromeStorage(() => chrome.storage.local.get(['panelPos', 'activeTab'], (result) => {
       if (result.panelPos) {
         p.style.top = result.panelPos.top;
         p.style.left = result.panelPos.left;
@@ -342,12 +430,15 @@
       const tab = result.activeTab || 'genel';
       p.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       p.querySelectorAll('.tab-pane').forEach(p2 => p2.classList.remove('active'));
-      p.querySelector('.tab-btn[data-tab="' + tab + '"]').classList.add('active');
-      p.querySelector('.tab-pane[data-tab="' + tab + '"]').classList.add('active');
-    });
+      const activeBtn = p.querySelector('.tab-btn[data-tab="' + tab + '"]');
+      const activePane = p.querySelector('.tab-pane[data-tab="' + tab + '"]');
+      if (activeBtn) activeBtn.classList.add('active');
+      if (activePane) activePane.classList.add('active');
 
-    p.style.display = 'flex';
-    chrome.storage.local.set({ panelVisible: true });
+      // Pozisyon restore edildikten sonra göster — flicker önleme
+      p.style.display = 'flex';
+      safeChromeStorage(() => chrome.storage.local.set({ panelVisible: true }));
+    }));
   }
 
   // ============================================================
@@ -356,17 +447,38 @@
   function fetchGenelInfo(modelName, fieldName) {
     odooRpc('ir.model.fields', 'search_read', [
       [['model', '=', modelName], ['name', '=', fieldName]],
-      ['modules', 'field_description', 'ttype', 'relation']
+      ['id', 'modules', 'field_description', 'ttype', 'relation']
     ], { limit: 1 }).then(fields => {
-      let html = '';
-      if (fields && fields.length > 0) {
-        const f = fields[0];
-        html += '<div class="addon-line"><span class="addon-label">📦 ' + t('addonLabel') + ':</span> <span class="addon-value">' + esc(f.modules || t('unknown')) + '</span></div>';
+      if (!fields || fields.length === 0) return;
+      const f = fields[0];
+
+      function renderAddonHtml(moduleStr) {
+        let html = '<div class="addon-line"><span class="addon-label">📦 ' + t('addonLabel') + ':</span> <span class="addon-value">' + esc(moduleStr || t('unknown')) + '</span></div>';
         if (f.relation) {
           html += '<div class="addon-line"><span class="addon-label">🔗 ' + t('relationLabel') + ':</span> <span class="addon-value">' + esc(f.relation) + '</span></div>';
         }
+        if (panel) panel.querySelector('#odoo-tooltip-addon-info').innerHTML = html;
       }
-      if (panel) panel.querySelector('#odoo-tooltip-addon-info').innerHTML = html;
+
+      if (f.modules) {
+        // Admin kullanicilarda modules direkt gelir
+        renderAddonHtml(f.modules);
+      } else {
+        // Non-admin fallback: ir.model.data'dan module adini al
+        odooRpc('ir.model.data', 'search_read', [
+          [['model', '=', 'ir.model.fields'], ['res_id', '=', f.id]],
+          ['module']
+        ], { limit: 10 }).then(dataRecs => {
+          if (dataRecs && dataRecs.length > 0) {
+            const mods = [...new Set(dataRecs.map(d => d.module))].join(', ');
+            renderAddonHtml(mods);
+          } else {
+            renderAddonHtml('');
+          }
+        }).catch(() => renderAddonHtml(''));
+      }
+    }).catch(() => {
+      if (panel) panel.querySelector('#odoo-tooltip-addon-info').innerHTML = '';
     });
 
     // Kopyalama formatlari
@@ -405,7 +517,6 @@
         return;
       }
       const f = fields[0];
-      let html = '<table class="info-table">';
       const rows = [
         [t('fieldNameLabel'), f.name],
         [t('descriptionLabel'), f.field_description],
@@ -417,7 +528,6 @@
         ['Copied', f.copied ? '✅ ' + t('yes') : '❌ ' + t('no')],
         ['Translate', f.translate ? '✅ ' + t('yes') : '❌ ' + t('no')],
       ];
-      // Compute: boolean veya string olabilir
       if (f.compute && f.compute !== false && f.compute !== 'False') {
         rows.push(['Compute', typeof f.compute === 'string' ? f.compute : '✅ Evet (computed field)']);
       }
@@ -430,11 +540,12 @@
       if (f.help) rows.push([t('helpLabel'), f.help]);
       if (f.groups && f.groups.length > 0) rows.push([t('groupsLabel'), Array.isArray(f.groups) ? f.groups.join(', ') : f.groups]);
 
+      const parts = ['<table class="info-table">'];
       rows.forEach(([label, value]) => {
-        html += '<tr><td class="info-label">' + esc(label) + '</td><td class="info-value">' + esc(String(value || '-')) + '</td></tr>';
+        parts.push('<tr><td class="info-label">' + esc(label) + '</td><td class="info-value">' + esc(String(value || '-')) + '</td></tr>');
       });
-      html += '</table>';
-      setTabContent('teknik', html);
+      parts.push('</table>');
+      setTabContent('teknik', parts.join(''));
     }).catch(() => setTabContent('teknik', '<div class="tab-empty">' + t('queryError') + '</div>'));
   }
 
@@ -459,49 +570,44 @@
         [['inherit_id', '=', baseView.id]],
         ['name', 'xml_id', 'key', 'priority']
       ], { order: 'priority' }).then(inheritedViews => {
-        let html = '';
+        const parts = [];
 
-        // Base view
-        html += '<div class="view-section-title">🖼 ' + t('baseViewTitle') + ' (' + esc(viewType) + ')</div>';
-        html += '<table class="info-table">';
-        html += '<tr><td class="info-label">' + t('nameLabel') + '</td><td class="info-value">' + esc(baseView.name || '-') + '</td></tr>';
-        html += '<tr><td class="info-label">ID</td><td class="info-value">' + baseView.id + '</td></tr>';
-        html += '<tr><td class="info-label">XML ID</td><td class="info-value">' + esc(baseView.xml_id || '-') + '</td></tr>';
-        html += '<tr><td class="info-label">' + t('priorityLabel') + '</td><td class="info-value">' + (baseView.priority || '-') + '</td></tr>';
-        html += '</table>';
+        parts.push('<div class="view-section-title">🖼 ' + t('baseViewTitle') + ' (' + esc(viewType) + ')</div>');
+        parts.push('<table class="info-table">');
+        parts.push('<tr><td class="info-label">' + t('nameLabel') + '</td><td class="info-value">' + esc(baseView.name || '-') + '</td></tr>');
+        parts.push('<tr><td class="info-label">ID</td><td class="info-value">' + baseView.id + '</td></tr>');
+        parts.push('<tr><td class="info-label">XML ID</td><td class="info-value">' + esc(baseView.xml_id || '-') + '</td></tr>');
+        parts.push('<tr><td class="info-label">' + t('priorityLabel') + '</td><td class="info-value">' + (baseView.priority || '-') + '</td></tr>');
+        parts.push('</table>');
+        parts.push('<button class="xml-preview-btn" id="xml-preview-toggle">' + t('xmlPreview') + '</button>');
+        parts.push('<pre class="xml-preview-content" id="xml-preview-content" style="display:none;">' + esc(baseView.arch_db || t('xmlNotFound')) + '</pre>');
 
-        // XML Onizleme butonu
-        html += '<button class="xml-preview-btn" id="xml-preview-toggle">' + t('xmlPreview') + '</button>';
-        html += '<pre class="xml-preview-content" id="xml-preview-content" style="display:none;">' + esc(baseView.arch_db || t('xmlNotFound')) + '</pre>';
-
-        // Diger base viewlar
         if (baseViews.length > 1) {
-          html += '<div class="view-section-title" style="margin-top:12px;">📋 ' + t('otherBaseViews') + '</div>';
-          html += '<table class="info-table">';
+          parts.push('<div class="view-section-title" style="margin-top:12px;">📋 ' + t('otherBaseViews') + '</div>');
+          parts.push('<table class="info-table">');
           for (let i = 1; i < baseViews.length; i++) {
             const v = baseViews[i];
-            html += '<tr><td class="info-label">' + esc(v.xml_id || 'ID:' + v.id) + '</td><td class="info-value">' + esc(v.name || '-') + '</td></tr>';
+            parts.push('<tr><td class="info-label">' + esc(v.xml_id || 'ID:' + v.id) + '</td><td class="info-value">' + esc(v.name || '-') + '</td></tr>');
           }
-          html += '</table>';
+          parts.push('</table>');
         }
 
-        // Inherited views
         if (inheritedViews && inheritedViews.length > 0) {
-          html += '<div class="view-section-title" style="margin-top:12px;">🔀 ' + t('inheritedViews') + ' (' + inheritedViews.length + ')</div>';
-          html += '<div class="inherited-list">';
+          parts.push('<div class="view-section-title" style="margin-top:12px;">🔀 ' + t('inheritedViews') + ' (' + inheritedViews.length + ')</div>');
+          parts.push('<div class="inherited-list">');
           inheritedViews.forEach(v => {
             const addon = (v.xml_id || '').split('.')[0] || '?';
-            html += '<div class="inherited-item">';
-            html += '<span class="inherited-addon">' + esc(addon) + '</span>';
-            html += '<span class="inherited-name">' + esc(v.xml_id || v.name || 'ID:' + v.id) + '</span>';
-            html += '</div>';
+            parts.push('<div class="inherited-item">');
+            parts.push('<span class="inherited-addon">' + esc(addon) + '</span>');
+            parts.push('<span class="inherited-name">' + esc(v.xml_id || v.name || 'ID:' + v.id) + '</span>');
+            parts.push('</div>');
           });
-          html += '</div>';
+          parts.push('</div>');
         } else {
-          html += '<div class="tab-note" style="margin-top:12px;">' + t('noInheritedViews') + '</div>';
+          parts.push('<div class="tab-note" style="margin-top:12px;">' + t('noInheritedViews') + '</div>');
         }
 
-        setTabContent('viewlar', html);
+        setTabContent('viewlar', parts.join(''));
 
         // XML toggle event
         setTimeout(() => {
@@ -529,9 +635,9 @@
 
     try {
       let cleaned = domainStr.trim().replace(/%(s|d)/g, '...');
-      const tupleRegex = /\(\s*['"]([\w.]+)['"]\s*,\s*['"]([^'"]+)['"]\s*,\s*(.+?)\s*\)/g;
+      DOMAIN_TUPLE_REGEX.lastIndex = 0;
       let parts = [], match;
-      while ((match = tupleRegex.exec(cleaned)) !== null) {
+      while ((match = DOMAIN_TUPLE_REGEX.exec(cleaned)) !== null) {
         const field = match[1], op = match[2];
         let val = match[3].trim().replace(/^['"]|['"]$/g, '');
         const fl = fieldMap[field] || field.replace(/_/g, ' ');
@@ -556,50 +662,50 @@
     ], {});
 
     Promise.all([accessP, ruleP]).then(([accesses, rules]) => {
-      let html = '';
+      const parts = [];
 
-      html += '<div class="view-section-title">' + t('accessRights') + '</div>';
+      parts.push('<div class="view-section-title">' + t('accessRights') + '</div>');
       if (accesses && accesses.length > 0) {
-        html += '<table class="info-table access-table">';
-        html += '<tr><th>Grup</th><th>R</th><th>W</th><th>C</th><th>D</th></tr>';
+        parts.push('<table class="info-table access-table">');
+        parts.push('<tr><th>Grup</th><th>R</th><th>W</th><th>C</th><th>D</th></tr>');
         accesses.forEach(a => {
           const group = a.group_id ? a.group_id[1] : t('everyone');
-          html += '<tr>';
-          html += '<td class="info-label" title="' + esc(a.name) + '">' + esc(group) + '</td>';
-          html += '<td class="perm-cell">' + (a.perm_read ? '✅' : '❌') + '</td>';
-          html += '<td class="perm-cell">' + (a.perm_write ? '✅' : '❌') + '</td>';
-          html += '<td class="perm-cell">' + (a.perm_create ? '✅' : '❌') + '</td>';
-          html += '<td class="perm-cell">' + (a.perm_unlink ? '✅' : '❌') + '</td>';
-          html += '</tr>';
+          parts.push('<tr>');
+          parts.push('<td class="info-label" title="' + esc(a.name) + '">' + esc(group) + '</td>');
+          parts.push('<td class="perm-cell">' + (a.perm_read ? '✅' : '❌') + '</td>');
+          parts.push('<td class="perm-cell">' + (a.perm_write ? '✅' : '❌') + '</td>');
+          parts.push('<td class="perm-cell">' + (a.perm_create ? '✅' : '❌') + '</td>');
+          parts.push('<td class="perm-cell">' + (a.perm_unlink ? '✅' : '❌') + '</td>');
+          parts.push('</tr>');
         });
-        html += '</table>';
+        parts.push('</table>');
       } else {
-        html += '<div class="tab-note">' + t('noAccessFound') + '</div>';
+        parts.push('<div class="tab-note">' + t('noAccessFound') + '</div>');
       }
 
-      html += '<div class="view-section-title" style="margin-top:12px;">' + t('recordRulesTitle') + '</div>';
+      parts.push('<div class="view-section-title" style="margin-top:12px;">' + t('recordRulesTitle') + '</div>');
       if (rules && rules.length > 0) {
-        html += '<div class="rules-list">';
+        parts.push('<div class="rules-list">');
         rules.forEach(r => {
-          html += '<div class="rule-item">';
-          html += '<div class="rule-name">' + esc(r.name || '-') + '</div>';
+          parts.push('<div class="rule-item">');
+          parts.push('<div class="rule-name">' + esc(r.name || '-') + '</div>');
           if (r.domain_force) {
-            html += '<div class="rule-domain">' + esc(r.domain_force) + '</div>';
-            html += '<div class="rule-explain">💬 ' + esc(explainDomain(r.domain_force)) + '</div>';
+            parts.push('<div class="rule-domain">' + esc(r.domain_force) + '</div>');
+            parts.push('<div class="rule-explain">💬 ' + esc(explainDomain(r.domain_force)) + '</div>');
           }
           const perms = [];
           if (r.perm_read) perms.push('R');
           if (r.perm_write) perms.push('W');
           if (r.perm_create) perms.push('C');
           if (r.perm_unlink) perms.push('D');
-          html += '<div class="rule-perms">' + perms.join(' · ') + '</div>';
-          html += '</div>';
+          parts.push('<div class="rule-perms">' + perms.join(' · ') + '</div>');
+          parts.push('</div>');
         });
-        html += '</div>';
+        parts.push('</div>');
       } else {
-        html += '<div class="tab-note">' + t('noRulesFound') + '</div>';
+        parts.push('<div class="tab-note">' + t('noRulesFound') + '</div>');
       }
-      setTabContent('erisim', html);
+      setTabContent('erisim', parts.join(''));
     }).catch(() => setTabContent('erisim', '<div class="tab-empty">' + t('queryError') + '</div>'));
   }
 
@@ -621,7 +727,7 @@
         if (grouped[f.ttype]) grouped[f.ttype].push(f);
       });
 
-      let html = '<div class="relation-model-name">' + esc(modelName) + '</div>';
+      const parts = ['<div class="relation-model-name">' + esc(modelName) + '</div>'];
 
       const sections = [
         { key: 'many2one', icon: '➡️', title: 'Many2one', desc: t('m2oDesc') },
@@ -632,19 +738,19 @@
       sections.forEach(s => {
         const items = grouped[s.key];
         if (items.length === 0) return;
-        html += '<div class="view-section-title" style="margin-top:10px;">' + s.icon + ' ' + s.title + ' <span class="rel-desc">(' + s.desc + ')</span></div>';
-        html += '<div class="relation-list">';
+        parts.push('<div class="view-section-title" style="margin-top:10px;">' + s.icon + ' ' + s.title + ' <span class="rel-desc">(' + s.desc + ')</span></div>');
+        parts.push('<div class="relation-list">');
         items.forEach(f => {
-          html += '<div class="relation-item">';
-          html += '<div class="relation-field">' + esc(f.name) + '</div>';
-          html += '<div class="relation-target">' + esc(f.relation || '-') + '</div>';
-          html += '<div class="relation-label">' + esc(f.field_description || '') + '</div>';
-          html += '</div>';
+          parts.push('<div class="relation-item">');
+          parts.push('<div class="relation-field">' + esc(f.name) + '</div>');
+          parts.push('<div class="relation-target">' + esc(f.relation || '-') + '</div>');
+          parts.push('<div class="relation-label">' + esc(f.field_description || '') + '</div>');
+          parts.push('</div>');
         });
-        html += '</div>';
+        parts.push('</div>');
       });
 
-      setTabContent('iliskiler', html);
+      setTabContent('iliskiler', parts.join(''));
     }).catch(() => setTabContent('iliskiler', '<div class="tab-empty">' + t('queryError') + '</div>'));
   }
 
@@ -680,16 +786,17 @@
     return lines.join('\n');
   }
 
+  // Odoo 16: .o-tooltip / Odoo 17+: aynı class ancak parent farklı olabilir
+  const TOOLTIP_SELECTOR = '.o-tooltip';
+
   const observer = new MutationObserver(() => {
-    const tooltip = document.querySelector('.o-tooltip');
+    const tooltip = document.querySelector(TOOLTIP_SELECTOR);
     if (tooltip && tooltip !== currentTooltip) {
       currentTooltip = tooltip;
       const tooltipText = extractTooltipText(tooltip);
       showPanel(tooltipText);
 
       const { modelName, fieldName } = parseTooltipFields(tooltip);
-      lastModel = modelName;
-      lastField = fieldName;
       if (modelName && fieldName) {
         fetchGenelInfo(modelName, fieldName);
         fetchTeknikInfo(modelName, fieldName);
@@ -698,19 +805,31 @@
         fetchIliskilerInfo(modelName);
       }
 
-      tooltip.addEventListener('mouseenter', () => clearTimeout(hideTimer));
-      tooltip.addEventListener('mouseleave', () => {
-        hideTimer = setTimeout(() => { tooltip.style.display = 'none'; }, 300);
-      });
+      if (previousTooltip && previousTooltip !== tooltip) {
+        previousTooltip.removeEventListener('mouseenter', onTooltipEnter);
+        previousTooltip.removeEventListener('mouseleave', onTooltipLeave);
+      }
+      tooltip.addEventListener('mouseenter', onTooltipEnter);
+      tooltip.addEventListener('mouseleave', onTooltipLeave);
+      previousTooltip = tooltip;
     }
   });
+
+  function onTooltipEnter() { clearTimeout(hideTimer); }
+  function onTooltipLeave() {
+    hideTimer = setTimeout(() => { if (currentTooltip) currentTooltip.style.display = 'none'; }, HIDE_DELAY_MS);
+  }
 
   observer.observe(document.body, { childList: true, subtree: true });
 
   function getTooltipIcon(target) {
     try {
       if (!target || target.nodeType !== 1) return null;
-      return target.closest('[data-tooltip-template="web.FieldTooltip"]');
+      // Odoo 16-17: data-tooltip-template attribute
+      return target.closest('[data-tooltip-template="web.FieldTooltip"]')
+        // Odoo 17+ alternatif: data-tooltip ile field bilgisi
+        || target.closest('[data-tooltip][data-field]')
+        || target.closest('.o_field_widget .o_optional_columns_dropdown_toggle');
     } catch (e) { return null; }
   }
 
@@ -721,13 +840,13 @@
 
   document.addEventListener('mouseout', (e) => {
     const icon = getTooltipIcon(e.target);
-    if (icon) { hideTimer = setTimeout(() => { if (currentTooltip) currentTooltip.style.display = 'none'; }, 300); }
+    if (icon) { hideTimer = setTimeout(() => { if (currentTooltip) currentTooltip.style.display = 'none'; }, HIDE_DELAY_MS); }
   }, true);
 
   // ============================================================
   // POPUP MESAJ DINLEYICI
   // ============================================================
-  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg.type === 'GET_PAGE_INFO') {
       const params = getUrlParams();
       const env = getEnvInfo();
@@ -769,17 +888,19 @@
     ], { limit: 1 }).then(actions => {
       if (actions && actions.length > 0) {
         const actionId = actions[0].id;
+        const base = window.location.origin + '/web#';
         if (id) {
-          window.location.href = window.location.origin + '/web#action=' + actionId + '&model=' + model + '&view_type=form&id=' + id;
+          window.location.href = base + 'action=' + encodeURIComponent(actionId) + '&model=' + encodeURIComponent(model) + '&view_type=form&id=' + encodeURIComponent(id);
         } else {
-          window.location.href = window.location.origin + '/web#action=' + actionId + '&model=' + model + '&view_type=list';
+          window.location.href = base + 'action=' + encodeURIComponent(actionId) + '&model=' + encodeURIComponent(model) + '&view_type=list';
         }
       } else {
         // Action bulunamazsa dogrudan dene
+        const base = window.location.origin + '/web#';
         if (id) {
-          window.location.href = window.location.origin + '/web#model=' + model + '&view_type=form&id=' + id;
+          window.location.href = base + 'model=' + encodeURIComponent(model) + '&view_type=form&id=' + encodeURIComponent(id);
         } else {
-          window.location.href = window.location.origin + '/web#model=' + model + '&view_type=list';
+          window.location.href = base + 'model=' + encodeURIComponent(model) + '&view_type=list';
         }
       }
     });
@@ -792,7 +913,7 @@
       ['id', 'name']
     ], { limit: 1, order: 'id' }).then(actions => {
       if (actions && actions.length > 0) {
-        window.location.href = window.location.origin + '/web#action=' + actions[0].id + '&model=' + model + '&view_type=list';
+        window.location.href = window.location.origin + '/web#action=' + encodeURIComponent(actions[0].id) + '&model=' + encodeURIComponent(model) + '&view_type=list';
       } else {
         // Action yoksa Settings > Technical > model ile dene
         window.location.href = window.location.origin + '/odoo/settings?searchText=' + encodeURIComponent(model);

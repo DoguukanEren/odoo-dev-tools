@@ -12,7 +12,7 @@
   }
 
   function postLog(data) {
-    window.postMessage({ type: 'ODOO_RPC_LOG', ...data }, '*');
+    window.postMessage({ type: 'ODOO_RPC_LOG', ...data }, window.location.origin);
   }
 
   function parseResultCount(text) {
