@@ -5,11 +5,11 @@ Chrome extension for Odoo developers and consultants — inspect fields, monitor
 ## Features
 
 ### Floating Info Panel (6 tabs)
-- **Genel** — Field tooltip, addon/module info, quick copy formats (Python path, domain, XML, ORM)
-- **Teknik** — Field properties: store, compute, required, readonly, index, depends, related
-- **View** — Base view + inherited views with XML preview
-- **Erişim** — Access rights table + record rules with Turkish explanations
-- **İlişki** — Many2one / One2many / Many2many relationship map
+- **General** — Field tooltip, addon/module info, quick copy formats (Python path, domain, XML, ORM)
+- **Technical** — Field properties: store, compute, required, readonly, index, depends, related
+- **Views** — Base view + inherited views with XML preview
+- **Access** — Access rights table + record rules
+- **Relations** — Many2one / One2many / Many2many relationship map
 - **RPC** — Live RPC call monitor with slow/error highlighting
 
 ### Info Bar
