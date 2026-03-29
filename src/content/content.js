@@ -12,29 +12,15 @@
   // YARDIMCI FONKSIYONLAR
   // ============================================================
   function odooRpc(model, method, args, kwargs) {
-    const kw = kwargs || {};
-    if (!kw.context) kw.context = {};
     const payload = {
       jsonrpc: '2.0', method: 'call', id: Date.now(),
-      params: { model, method, args, kwargs: kw }
+      params: { model, method, args, kwargs: kwargs || {} }
     };
-    const makeRequest = (url) => fetch(url, {
+    return fetch(window.location.origin + '/web/dataset/call_kw', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
       body: JSON.stringify(payload)
-    }).then(r => r.json()).then(d => {
-      if (d.error) {
-        console.warn('[OdooDevTools] RPC error:', d.error.data?.message || d.error.message);
-        return [];
-      }
-      if (d.result === undefined || d.result === null) return [];
-      return d.result;
-    });
-
-    // Try new v17+ path format first, fallback to classic endpoint
-    return makeRequest(window.location.origin + '/web/dataset/call_kw/' + model + '/' + method)
-      .catch(() => makeRequest(window.location.origin + '/web/dataset/call_kw'));
+    }).then(r => r.json()).then(d => d.result || []);
   }
 
   function esc(str) {
@@ -44,63 +30,15 @@
   }
 
   function getUrlParams() {
-    // v15/v16: /web#model=res.partner&view_type=list&action=123&id=42
     const hash = window.location.hash || '';
-    if (hash.includes('model=')) {
-      const get = (key) => { const m = hash.match(new RegExp('[#&]' + key + '=([\\w.]+)')); return m ? m[1] : ''; };
-      return {
-        model: get('model'),
-        viewType: get('view_type') || 'form',
-        actionId: get('action'),
-        menuId: get('menu_id'),
-        recordId: get('id'),
-        cids: get('cids')
-      };
-    }
-
-    // v17+: /odoo/{slug} or /odoo/{slug}/{id} — model not in URL, read from OWL state
-    const searchParams = new URLSearchParams(window.location.search);
-    let model = '', viewType = '', recordId = '', actionId = '', menuId = '';
-
-    try {
-      const apps = window.__owl__?.apps;
-      if (apps) {
-        for (const app of Object.values(apps)) {
-          const env = app.env;
-          if (!env || !env.services) continue;
-          const actionService = env.services.action;
-          if (!actionService) continue;
-          const controller = actionService.currentController;
-          if (controller) {
-            const action = controller.action || {};
-            if (action.res_model) {
-              model = action.res_model;
-              viewType = controller.view?.type || action.view_mode?.split(',')[0] || 'form';
-              if (controller.record?.resId) recordId = String(controller.record.resId);
-              if (action.id) actionId = String(action.id);
-              break;
-            }
-          }
-        }
-      }
-    } catch (e) {}
-
-    // Fallback: extract numeric record ID from URL path (/odoo/contacts/42)
-    if (!recordId) {
-      const lastPart = window.location.pathname.split('/').filter(Boolean).pop();
-      if (lastPart && /^\d+$/.test(lastPart)) {
-        recordId = lastPart;
-        viewType = viewType || 'form';
-      }
-    }
-
+    const get = (key) => { const m = hash.match(new RegExp(key + '=(\\w+)')); return m ? m[1] : ''; };
     return {
-      model,
-      viewType: viewType || 'list',
-      actionId: actionId || searchParams.get('action') || '',
-      menuId: menuId || searchParams.get('menu_id') || '',
-      recordId,
-      cids: searchParams.get('cids') || ''
+      model: get('model'),
+      viewType: get('view_type') || 'form',
+      actionId: get('action'),
+      menuId: get('menu_id'),
+      recordId: get('id'),
+      cids: get('cids')
     };
   }
 
@@ -202,25 +140,15 @@
     setTimeout(createInfoBar, 300);
   });
 
-  // Odoo SPA navigasyonu icin pushState/replaceState de dinle (v17+ path-based routing)
-  function refreshInfoBar() {
+  // Odoo SPA navigasyonu icin pushState/replaceState de dinle
+  const origPushState = history.pushState;
+  history.pushState = function () {
+    origPushState.apply(this, arguments);
     setTimeout(() => {
       const old = document.getElementById('odoo-dev-infobar');
       if (old) old.remove();
       createInfoBar();
-    }, 500);
-  }
-
-  const origPushState = history.pushState;
-  history.pushState = function () {
-    origPushState.apply(this, arguments);
-    refreshInfoBar();
-  };
-
-  const origReplaceState = history.replaceState;
-  history.replaceState = function () {
-    origReplaceState.apply(this, arguments);
-    refreshInfoBar();
+    }, 300);
   };
 
   // ============================================================
@@ -725,29 +653,14 @@
   // ============================================================
   function parseTooltipFields(tooltip) {
     let modelName = null, fieldName = null;
-
-    // DOM-based parsing (v16/older class names)
-    tooltip.querySelectorAll('.o-tooltip--technical li, .o_tooltip--technical li').forEach(li => {
-      const titleEl = li.querySelector('.o-tooltip--technical--title, .o_tooltip--technical--title');
+    tooltip.querySelectorAll('.o-tooltip--technical li').forEach(li => {
+      const titleEl = li.querySelector('.o-tooltip--technical--title');
       if (!titleEl) return;
       const title = titleEl.textContent.trim().toLowerCase();
-      // Take only the first non-empty token to avoid embedded whitespace issues
-      const raw = li.textContent.replace(titleEl.textContent, '').replace(':', '').trim();
-      const value = raw.split(/\s+/)[0];
-      if (!fieldName && (title === 'field' || title.includes('alan'))) fieldName = value;
-      if (!modelName && title === 'model') modelName = value;
+      const value = li.textContent.replace(titleEl.textContent, '').trim();
+      if (title.includes('field') || title.includes('alan')) fieldName = value;
+      if (title.includes('model')) modelName = value;
     });
-
-    // Text-based fallback for v17+/v19 where class names may differ
-    if (!modelName || !fieldName) {
-      const lines = tooltip.textContent.split('\n').map(l => l.trim()).filter(Boolean);
-      for (const line of lines) {
-        const parts = line.split(/\s+/);
-        if (!fieldName && /^field$/i.test(parts[0]) && parts[1]) fieldName = parts[1].replace(':', '').trim();
-        if (!modelName && /^model$/i.test(parts[0]) && parts[1]) modelName = parts[1].replace(':', '').trim();
-      }
-    }
-
     return { modelName, fieldName };
   }
 
