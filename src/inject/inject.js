@@ -4,9 +4,10 @@
   function isRpcUrl(url) {
     return typeof url === 'string' && (
       url.includes('/web/dataset/call_kw') ||
-      url.includes('/web/action') ||
       url.includes('/web/dataset/search_read') ||
       url.includes('/web/dataset/call') ||
+      url.includes('/web/action/load') ||
+      url.includes('/web/action/run') ||
       url.includes('/web/webclient')
     );
   }

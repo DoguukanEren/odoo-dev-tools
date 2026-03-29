@@ -30,15 +30,63 @@
   }
 
   function getUrlParams() {
+    // v15/v16: /web#model=res.partner&view_type=list&action=123&id=42
     const hash = window.location.hash || '';
-    const get = (key) => { const m = hash.match(new RegExp(key + '=(\\w+)')); return m ? m[1] : ''; };
+    if (hash.includes('model=')) {
+      const get = (key) => { const m = hash.match(new RegExp('[#&]' + key + '=([\\w.]+)')); return m ? m[1] : ''; };
+      return {
+        model: get('model'),
+        viewType: get('view_type') || 'form',
+        actionId: get('action'),
+        menuId: get('menu_id'),
+        recordId: get('id'),
+        cids: get('cids')
+      };
+    }
+
+    // v17+: /odoo/{slug} or /odoo/{slug}/{id} — model not in URL, read from OWL state
+    const searchParams = new URLSearchParams(window.location.search);
+    let model = '', viewType = '', recordId = '', actionId = '', menuId = '';
+
+    try {
+      const apps = window.__owl__?.apps;
+      if (apps) {
+        for (const app of Object.values(apps)) {
+          const env = app.env;
+          if (!env || !env.services) continue;
+          const actionService = env.services.action;
+          if (!actionService) continue;
+          const controller = actionService.currentController;
+          if (controller) {
+            const action = controller.action || {};
+            if (action.res_model) {
+              model = action.res_model;
+              viewType = controller.view?.type || action.view_mode?.split(',')[0] || 'form';
+              if (controller.record?.resId) recordId = String(controller.record.resId);
+              if (action.id) actionId = String(action.id);
+              break;
+            }
+          }
+        }
+      }
+    } catch (e) {}
+
+    // Fallback: extract numeric record ID from URL path (/odoo/contacts/42)
+    if (!recordId) {
+      const lastPart = window.location.pathname.split('/').filter(Boolean).pop();
+      if (lastPart && /^\d+$/.test(lastPart)) {
+        recordId = lastPart;
+        viewType = viewType || 'form';
+      }
+    }
+
     return {
-      model: get('model'),
-      viewType: get('view_type') || 'form',
-      actionId: get('action'),
-      menuId: get('menu_id'),
-      recordId: get('id'),
-      cids: get('cids')
+      model,
+      viewType: viewType || 'list',
+      actionId: actionId || searchParams.get('action') || '',
+      menuId: menuId || searchParams.get('menu_id') || '',
+      recordId,
+      cids: searchParams.get('cids') || ''
     };
   }
 
@@ -140,15 +188,25 @@
     setTimeout(createInfoBar, 300);
   });
 
-  // Odoo SPA navigasyonu icin pushState/replaceState de dinle
-  const origPushState = history.pushState;
-  history.pushState = function () {
-    origPushState.apply(this, arguments);
+  // Odoo SPA navigasyonu icin pushState/replaceState de dinle (v17+ path-based routing)
+  function refreshInfoBar() {
     setTimeout(() => {
       const old = document.getElementById('odoo-dev-infobar');
       if (old) old.remove();
       createInfoBar();
-    }, 300);
+    }, 500);
+  }
+
+  const origPushState = history.pushState;
+  history.pushState = function () {
+    origPushState.apply(this, arguments);
+    refreshInfoBar();
+  };
+
+  const origReplaceState = history.replaceState;
+  history.replaceState = function () {
+    origReplaceState.apply(this, arguments);
+    refreshInfoBar();
   };
 
   // ============================================================
