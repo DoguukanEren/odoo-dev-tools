@@ -262,5 +262,14 @@
   },
   "pageInfo": {
     "message": "Sayfa Bilgisi"
+  },
+  "debugEnabled": {
+    "message": "Debug Aktif"
+  },
+  "tooltipPanelTitle": {
+    "message": "Tooltip Paneli"
+  },
+  "tooltipPanelDesc": {
+    "message": "Hover ile alan bilgisi paneli"
   }
 }

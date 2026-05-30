@@ -42,20 +42,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ============ DEBUG MODU ============
-    document.getElementById('debug-on').addEventListener('click', () => {
-      updateDebugMode(tab, '1');
-    });
+    const currentUrl = new URL(tab.url);
+    const currentDebug = currentUrl.searchParams.get('debug') || '';
+    const btnOn = document.getElementById('debug-on');
+    const btnAssets = document.getElementById('debug-assets');
+    const btnOff = document.getElementById('debug-off');
 
-    document.getElementById('debug-assets').addEventListener('click', () => {
-      updateDebugMode(tab, 'assets');
-    });
+    if (currentDebug === '1') {
+      btnOn.classList.add('dbg-active');
+      btnOn.textContent = chrome.i18n.getMessage('debugEnabled') || 'Debug Active';
+    } else if (currentDebug === 'assets') {
+      btnAssets.classList.add('dbg-active');
+    }
 
-    document.getElementById('debug-off').addEventListener('click', () => {
-      updateDebugMode(tab, '');
-    });
+    if (!currentDebug) {
+      btnOff.style.display = 'none';
+    }
+
+    btnOn.addEventListener('click', () => updateDebugMode(tab, '1'));
+    btnAssets.addEventListener('click', () => updateDebugMode(tab, 'assets'));
+    btnOff.addEventListener('click', () => updateDebugMode(tab, ''));
 
     function updateDebugMode(tab, debugValue) {
-      // Odoo debug modu URL'de ?debug=1 veya ?debug=assets seklinde
       const url = new URL(tab.url);
       if (debugValue) {
         url.searchParams.set('debug', debugValue);
@@ -65,6 +73,19 @@ document.addEventListener('DOMContentLoaded', () => {
       chrome.tabs.update(tab.id, { url: url.toString() });
       window.close();
     }
+
+    // ============ TOOLTIP PANEL TOGGLE ============
+    const tooltipToggle = document.getElementById('tooltip-panel-toggle');
+    chrome.storage.local.get(['tooltipPanelEnabled'], (result) => {
+      const enabled = result.tooltipPanelEnabled !== false;
+      tooltipToggle.checked = enabled;
+    });
+
+    tooltipToggle.addEventListener('change', () => {
+      const enabled = tooltipToggle.checked;
+      chrome.storage.local.set({ tooltipPanelEnabled: enabled });
+      chrome.tabs.sendMessage(tab.id, { type: 'SET_TOOLTIP_PANEL', enabled });
+    });
 
     // ============ HIZLI NAVIGASYON ============
     document.getElementById('nav-go').addEventListener('click', () => {

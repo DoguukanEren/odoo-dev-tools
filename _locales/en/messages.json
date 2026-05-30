@@ -262,5 +262,14 @@
   },
   "pageInfo": {
     "message": "Page Info"
+  },
+  "debugEnabled": {
+    "message": "Debug Active"
+  },
+  "tooltipPanelTitle": {
+    "message": "Tooltip Panel"
+  },
+  "tooltipPanelDesc": {
+    "message": "Field info panel on hover"
   }
 }

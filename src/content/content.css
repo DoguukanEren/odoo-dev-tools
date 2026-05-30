@@ -19,6 +19,10 @@
   box-shadow: 0 -2px 8px rgba(0,0,0,0.2) !important;
 }
 
+#odoo-dev-infobar.hidden {
+  display: none !important;
+}
+
 .infobar-env {
   padding: 2px 8px !important;
   border-radius: 4px !important;

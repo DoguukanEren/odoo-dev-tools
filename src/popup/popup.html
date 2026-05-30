@@ -27,10 +27,22 @@
       <!-- Debug Mode -->
       <div class="section">
         <h2 data-i18n="debugMode">Debug Mode</h2>
-        <div class="debug-buttons">
+        <div class="debug-buttons" id="debug-buttons">
           <button id="debug-on" class="dbg-btn" data-i18n="debugEnable">Enable Debug</button>
           <button id="debug-assets" class="dbg-btn dbg-assets" data-i18n="debugAssets">Assets</button>
           <button id="debug-off" class="dbg-btn dbg-off" data-i18n="debugDisable">Disable</button>
+        </div>
+      </div>
+
+      <!-- Tooltip Panel Toggle -->
+      <div class="section">
+        <h2 data-i18n="tooltipPanelTitle">Tooltip Panel</h2>
+        <div class="toggle-row">
+          <span class="toggle-label" data-i18n="tooltipPanelDesc">Field info panel on hover</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="tooltip-panel-toggle" checked>
+            <span class="toggle-slider"></span>
+          </label>
         </div>
       </div>
 

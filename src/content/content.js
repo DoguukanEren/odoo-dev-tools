@@ -28,6 +28,22 @@
   let hideTimer = null;
   let panel = null;
   let rpcLogs = [];
+  let tooltipPanelEnabled = true;
+
+  // Storage'dan tooltip panel durumunu oku
+  safeChromeStorage(() => chrome.storage.local.get(['tooltipPanelEnabled'], (result) => {
+    tooltipPanelEnabled = result.tooltipPanelEnabled !== false;
+  }));
+
+  // Storage degisikliklerini dinle (popup kapansa bile calismasi icin)
+  safeChromeStorage(() => chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.tooltipPanelEnabled) {
+      tooltipPanelEnabled = changes.tooltipPanelEnabled.newValue !== false;
+      if (!tooltipPanelEnabled && panel) {
+        panel.style.display = 'none';
+      }
+    }
+  }));
 
   // ============================================================
   // YARDIMCI FONKSIYONLAR
@@ -179,7 +195,7 @@
     });
 
     bar.querySelector('#infobar-close').addEventListener('click', () => {
-      bar.style.display = 'none';
+      bar.classList.add('hidden');
     });
 
     bar.querySelector('#infobar-toggle-panel').addEventListener('click', () => {
@@ -410,6 +426,7 @@
   }
 
   function showPanel(text) {
+    if (!tooltipPanelEnabled) return;
     const p = createPanel();
     p.querySelector('#odoo-tooltip-panel-content').textContent = text;
     p.querySelector('#odoo-tooltip-addon-info').innerHTML = '';
@@ -790,6 +807,7 @@
   const TOOLTIP_SELECTOR = '.o-tooltip';
 
   const observer = new MutationObserver(() => {
+    if (!tooltipPanelEnabled) return;
     const tooltip = document.querySelector(TOOLTIP_SELECTOR);
     if (tooltip && tooltip !== currentTooltip) {
       currentTooltip = tooltip;
@@ -847,6 +865,15 @@
   // POPUP MESAJ DINLEYICI
   // ============================================================
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+    if (msg.type === 'SET_TOOLTIP_PANEL') {
+      tooltipPanelEnabled = msg.enabled;
+      if (!msg.enabled && panel) {
+        panel.style.display = 'none';
+      }
+      sendResponse({ ok: true });
+      return;
+    }
+
     if (msg.type === 'GET_PAGE_INFO') {
       const params = getUrlParams();
       const env = getEnvInfo();
